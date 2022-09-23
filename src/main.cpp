@@ -25,7 +25,7 @@ void deployParachute();
 void saveData();
 void Flying();
 void Steady();
-void ledSuccess();
+void Success();
 void Error();
 
 void setup()
@@ -61,7 +61,7 @@ void setup()
   // TODO: Save data in a file
 
   /** Success */
-  ledSuccess();
+  Success();
 
   /** Delay */
   delay(2000);
@@ -178,7 +178,7 @@ void saveData()
 {
 }
 
-void ledSuccess()
+void Success()
 {
   for (int i = 0; i < 3; i++)
   {
