@@ -10,21 +10,28 @@ SFE_BMP180 bmp180; // Create a BMP180 object
 double thresholdFall = 2; // Meters
 double thresholdFly = 1;  // Meters
 
-double altitude;
 double pressure;
 double temperature;
 double initPressure;
 double initAltitude;
+double maxAltitude;
+
+bool isFlying = false;
+bool isFalling = false;
+bool isLanded = false;
 
 const int LED_GREEN = 14;
 const int LED_RED = 12;
 const int BUZZER = 15;
 
 double getPressure();
-void deployParachute();
+void openParachute();
 void saveData();
+
+void Ready();
 void Flying();
-void Steady();
+void Landed();
+
 void Success();
 void Error();
 
@@ -56,6 +63,7 @@ void setup()
   /** Altitudes */
   initPressure = getPressure();
   initAltitude = bmp180.altitude(initPressure, initPressure);
+  maxAltitude = initAltitude;
 
   /** Save data */
   // TODO: Save data in a file
@@ -69,32 +77,40 @@ void setup()
 
 void loop()
 {
-  double A, P;
+  double Altitude, Pressure;
 
-  // Get pressure at current altitude
-  P = getPressure();
+  Pressure = getPressure();
+  Altitude = bmp180.altitude(Pressure, initPressure);
 
-  // Calculate relative altitude between:
-  // initialAltitude and actualAltitude
-  A = bmp180.altitude(P, initPressure);
-
-  if (A < (initAltitude - thresholdFall))
+  if (Altitude > maxAltitude)
   {
-    // Falling -> Recheck
-    deployParachute();
+    maxAltitude = Altitude;
   }
-  else if (A > (initAltitude + thresholdFly))
+
+  if (Altitude > (initAltitude + thresholdFly))
   {
-    // Flying
+    isFlying = true;
     Flying();
   }
-  else
+
+  if (isFlying && Altitude < (maxAltitude - thresholdFall))
   {
-    // Steady
-    Steady();
+    openParachute();
+    isFalling = true;
   }
 
-  delay(50);
+  if (isFalling && Altitude < (initAltitude + thresholdFly))
+  {
+    isLanded = true;
+    Landed();
+  }
+
+  if (!isLanded && !isFalling && !isFlying)
+  {
+    Ready();
+  }
+
+  delay(20);
 }
 
 double getPressure()
@@ -165,17 +181,41 @@ double getPressure()
   return (0);
 }
 
-void deployParachute()
-{
-  while (true)
-  {
-    servo.write(180);
-    digitalWrite(LED_RED, HIGH);
-  }
-}
-
 void saveData()
 {
+}
+
+void openParachute()
+{
+  servo.write(180);
+  digitalWrite(LED_GREEN, LOW);
+  digitalWrite(LED_RED, HIGH);
+}
+
+void Ready()
+{
+  digitalWrite(LED_GREEN, HIGH);
+}
+
+void Flying()
+{
+  digitalWrite(LED_GREEN, HIGH);
+  digitalWrite(LED_RED, HIGH);
+}
+
+void Landed()
+{
+  while (1)
+  {
+    digitalWrite(LED_RED, HIGH);
+    digitalWrite(LED_GREEN, HIGH);
+    digitalWrite(BUZZER, HIGH);
+    delay(750);
+    digitalWrite(LED_RED, LOW);
+    digitalWrite(LED_GREEN, LOW);
+    digitalWrite(BUZZER, LOW);
+    delay(500);
+  }
 }
 
 void Success()
@@ -202,19 +242,4 @@ void Error()
     digitalWrite(LED_RED, LOW);
     delay(200);
   }
-}
-
-void Steady()
-{
-  Serial.println("Steady");
-  digitalWrite(LED_GREEN, HIGH);
-  delay(50);
-  digitalWrite(LED_GREEN, LOW);
-}
-
-void Flying()
-{
-  Serial.println("Flying");
-  digitalWrite(LED_GREEN, HIGH);
-  digitalWrite(LED_RED, HIGH);
 }
