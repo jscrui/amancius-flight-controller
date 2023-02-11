@@ -3,6 +3,7 @@
 #include <Servo.h>
 #include <Wire.h>
 #include <SFE_BMP180.h>
+#include <LittleFS.h>
 
 Servo servo;
 SFE_BMP180 bmp180; // Create a BMP180 object
@@ -40,6 +41,20 @@ void setup()
   /** Starting */
   Serial.begin(9600);
   Serial.println("Starting...");
+
+  /** FileSystem */
+  if (!LittleFS.begin())
+  {
+    Serial.println("Error while mounting LittleFS.");
+    return;
+  }
+
+  File file = LittleFS.open("/flight_data.txt", "r");
+  if (!file)
+  {
+    Serial.println("Error while opening file for reading.");
+    return;
+  }
 
   /** Servo */
   servo.attach(2); // D4
